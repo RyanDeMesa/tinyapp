@@ -52,6 +52,13 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+// when url is deleted this removes it from urlDatabase and redirects user to /urls page
+app.post("/urls/:id/delete", (req, res) => {
+  const id = req.params.id
+  delete urlDatabase[id]
+  res.redirect('/urls')
+})
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
