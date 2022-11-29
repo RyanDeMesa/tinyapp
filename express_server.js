@@ -17,6 +17,7 @@ const generateRandomString = function() {
 
 app.use(express.urlencoded({ extended: true }));
 
+// creates new short url when user submits form with long url then redirects to show page 
 app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
   const shortenedURL = generateRandomString(); // generates random 6 digit code for url inputted
@@ -31,15 +32,18 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
+// page that shows all urls 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
+// Page that lets you add new urls
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+// Shows page for short url
 app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
@@ -48,6 +52,7 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+// page that says hello
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -59,13 +64,22 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect('/urls')
 })
 
+// Redirects back to /url/ which is now updated with new longURL
+app.post('/urls/:id', (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls/");
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
+// page that shows all data in json form
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
+
+// page that just says hello world
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
