@@ -17,17 +17,26 @@
        <a class="nav-item nav-link" href="/urls">My URLs</a>
        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
 
+      <% if (!username) { %>
       <div style = "position:absolute; right:15px;">
         <form method="POST" action ="/login">
           <input
-          type="text"
+          type="text" 
+          style="height: 37px;"
           name="username"
           placeholder="Username"
           >
           <button type="submit" class="btn btn-outline-dark">Submit</button>
         </form>
       </div>
-
+      <% } else { %>
+        <form method="POST" action="/logout">
+          <div style = "position:absolute; right:15px;">
+          <label>Logged in as: <%= username %> &nbsp</label>
+          <button type="logout" class="btn btn-outline-dark">Logout</button>
+        </form>
+      <% } %>
+          </div>
      </div>
    </div>
  </nav>
