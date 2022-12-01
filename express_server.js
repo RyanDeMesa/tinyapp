@@ -6,18 +6,47 @@ const cookieParser = require("cookie-parser");
 app.set("view engine", "ejs");
 app.use(cookieParser());
 
-const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
-};
-
 // random string generator
 const generateRandomString = function () {
   const random = Math.random().toString(36).slice(2);
   return random.slice(0, 6);
 };
 
+// objects to hold information
+const urlDatabase = {
+  b2xVn2: "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com",
+};
+
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "password123",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "password345",
+  },
+};
+
 app.use(express.urlencoded({ extended: true }));
+
+// post to and user info to users obj and redirect to /urls
+app.post("/register/", (req, res) => {
+  const id = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+  users[id] = {
+    id,
+    email,
+    password
+  }
+  console.log(users)
+  res.cookie("user_id", id);
+  res.redirect("/urls/.");
+})
 
 // page for registation
 app.get("/register/", (req,res) => {
