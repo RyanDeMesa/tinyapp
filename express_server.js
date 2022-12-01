@@ -21,6 +21,17 @@ const getUserByEmail = function (email) {
   }
 };
 
+// function to return object with data for logged user
+const urlsForUser = (id, urlDatabase) => {
+  let userData = {};
+  for (let shortURLS in urlDatabase) {
+    if (id === urlDatabase[shortURLS].userID) {
+      result[shortURLS] = urlDatabase[shortURLS].longURL;
+    }
+  }
+  return userData;
+};
+
 // objects to hold information
 const urlDatabase = {
   b6UTxQ: {
