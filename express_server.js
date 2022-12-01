@@ -51,22 +51,22 @@ app.post("/register/", (req, res) => {
 // page for registation
 app.get("/register/", (req,res) => {
   const templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
   };
   res.render("register", templateVars);
 })
 
 // page clears cookies and redirects back to /urls/
 app.post("/logout/", (req, res) => {
-  const username = req.body.username;
-  res.clearCookie("username", username);
+  const val = req.body.users;
+  res.clearCookie("user_id", val);
   res.redirect("/urls/");
 });
 
 // this page saves the username to cookies then redirects back to /urls/
 app.post("/login/", (req, res) => {
-  const username = req.body.username;
-  res.cookie("username", username);
+  const val = req.body.users;
+  res.cookie("user_id", val);
   res.redirect("/urls/");
 });
 
@@ -78,26 +78,30 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortenedURL}`); // response is to redirect to /urls/:id
 });
 
-//redirects to longURL from shortenedURL
-app.get("/u/:id", (req, res) => {
-  const id = req.params.id;
-  const longURL = urlDatabase[id];
-  res.redirect(longURL);
+//individual url pages
+app.get("/urls/:id", (req, res) => {
+  const templatevars = {
+    id: req.params.id,
+    longURL: urlDatabase[req.params.id],
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_show", templatevars);
 });
 
 // page that shows all urls
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
   };
   res.render("urls_index", templateVars);
 });
 
 // Page that lets you add new urls
 app.get("/urls/new", (req, res) => {
-  let username = req.cookies["username"]
-  const templateVars = {username};
+  const templateVars = {
+    user: users[req.cookies["user_id"]],
+  };
   res.render("urls_new", templateVars);
 });
 
@@ -106,7 +110,7 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
   };
   res.render("urls_show", templateVars);
 });
