@@ -65,11 +65,6 @@ app.post("/register/", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  users[id] = {
-    id,
-    email,
-    password
-  }
   // checks if email or password is empty and redirects to error page if true
   if (!email || !password) {
     res.redirect("/error1")
@@ -80,6 +75,11 @@ app.post("/register/", (req, res) => {
     res.redirect("/error2")
     return;
   }
+  users[id] = {
+    id,
+    email,
+    password
+  };
   res.cookie("user_id", id);
   res.redirect("/urls/");
 })
@@ -99,11 +99,20 @@ app.post("/logout/", (req, res) => {
   res.redirect("/urls/");
 });
 
+// login page
+app.get("/login/", (req, res) => {
+  const templatevars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("login", templatevars)
+})
+
 // this page saves the username to cookies then redirects back to /urls/
 app.post("/login/", (req, res) => {
   const val = req.body.users;
   res.cookie("user_id", val);
-  res.redirect("/urls/");
+  res.redirect("/login");
 });
 
 // creates new short url when user submits form with long url then redirects to show page
