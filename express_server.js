@@ -12,6 +12,15 @@ const generateRandomString = function () {
   return random.slice(0, 6);
 };
 
+// function to find user from email
+const getUserByEmail = function (email) {
+  for (let id in users) {
+    if (users[id].email === email) {
+      return users[id]
+    }
+  }
+};
+
 // objects to hold information
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
@@ -33,6 +42,24 @@ const users = {
 
 app.use(express.urlencoded({ extended: true }));
 
+// error page for empty email or password 
+app.get("/error1", (req, res) => {
+  const templatevars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("error1", templatevars)
+});
+
+// error page for already registered email 
+app.get("/error2", (req, res) => {
+  const templatevars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("error2", templatevars)
+});
+
 // post to and user info to users obj and redirect to /urls
 app.post("/register/", (req, res) => {
   const id = generateRandomString();
@@ -43,9 +70,18 @@ app.post("/register/", (req, res) => {
     email,
     password
   }
-  console.log(users)
+  // checks if email or password is empty and redirects to error page if true
+  if (!email || !password) {
+    res.redirect("/error1")
+    return;
+  }
+  // checks if email or password is taken and redirects to error page if true
+  if (getUserByEmail(email)) {
+    res.redirect("/error2")
+    return;
+  }
   res.cookie("user_id", id);
-  res.redirect("/urls/.");
+  res.redirect("/urls/");
 })
 
 // page for registation
@@ -78,16 +114,6 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortenedURL}`); // response is to redirect to /urls/:id
 });
 
-//individual url pages
-app.get("/urls/:id", (req, res) => {
-  const templatevars = {
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("urls_show", templatevars);
-});
-
 // page that shows all urls
 app.get("/urls", (req, res) => {
   const templateVars = {
@@ -113,11 +139,6 @@ app.get("/urls/:id", (req, res) => {
     user: users[req.cookies["user_id"]],
   };
   res.render("urls_show", templateVars);
-});
-
-// page that says hello
-app.get("/", (req, res) => {
-  res.send("Hello!");
 });
 
 // when url is deleted this removes it from urlDatabase and redirects user to /urls page
