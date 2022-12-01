@@ -75,34 +75,31 @@ app.post("/register", (req, res) => {
     email,
     password
   };
-  console.log(users)
   res.cookie("user_id", id);
   res.redirect("/urls");
 })
 
 // page for registation
 app.get("/register", (req,res) => {
+  if (req.cookies.id) {
+    return res.redirect("/urls");
+  } 
   const templateVars = {
-    user: users[req.cookies["user_id"]],
-  };
-  if (!req.cookies["user_id"]) {
-    return res.redirect("/urls")
-  }
-  res.render("register", templateVars);
-})
+    user: users[req.cookies["user_id"]]
+    };
+  return res.render("register", templateVars);
+});
 
 // login page
 app.get("/login", (req, res) => {
-  const templatevars = {
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("login", templatevars)
-  if (!req.cookies["user_id"]) {
-    return res.redirect("/urls")
-  }
-  res.render("login", templateVars);
-})
+  if (req.cookies.id) {
+    return res.redirect("/urls");
+  } 
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+    };
+  return res.render("login", templateVars);
+});
 
 // this page saves the username to cookies then redirects back to /urls/
 app.post("/login", (req, res) => {
@@ -129,10 +126,9 @@ app.post("/urls", (req, res) => {
   if (!user) {
     return res.send("You can only create shortened urls while logged in!");
   }
-  console.log(req.body);
   const shortenedURL = generateRandomString(); 
-  urlDatabase[shortenedURL] = req.body.longURL; 
-  res.redirect(`/urls/${shortenedURL}`); 
+  urlDatabase[shortenedURL] = {longURL: req.body.longURL, userID: req.cookie.user}
+  return res.redirect(`/urls/${shortenedURL}`); 
 });
 
 // page that shows all urls
@@ -146,21 +142,19 @@ app.get("/urls", (req, res) => {
 
 // Page that lets you add new urls
 app.get("/urls/new", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  if (!email && !password) {
-    res.redirect("/login");
+  const templateVars = {
+    user: users[req.cookies["user_id"]],
+  };
+  if (!req.cookies["user_id"]) {
+    return res.redirect("/login")
   }
-  else {
-    const templateVars = { user: undefined };
-    res.render("urls_new", templateVars);
-  }
-});
+  res.render("urls_new", templateVars);
+})
 
 // opens long url from short url 
 app.get("/u/:id", (req, res) => {
   let id = req.params.id;
-  const longURL = urlDatabase[id];
+  const longURL = urlDatabase[id].longURL;
   for (let shortURLs in urlDatabase) {
     if(id === shortURLs) {
       return res.redirect(longURL);
@@ -171,12 +165,19 @@ return res.send("That url is not in our system!");
 
 // Shows page for short url
 app.get("/urls/:id", (req, res) => {
+  const user = req.cookies.user_id
   const templateVars = {
     id: req.params.id,
-    longURL: urlDatabase[req.params.id],
+    longURL: urlDatabase[req.params.id].longURL,
     user: users[req.cookies["user_id"]],
   };
-  res.redirect(`/urls/${shortenedURL}`); 
+  if (!user) {
+    res.send("Login to view this page!")
+  }
+  if (user !== urlDatabase[req.params.id].userID) {
+    res.send("You don't have the correct permissions to view this url!")
+  }
+  res.render("urls_show", templatevars);
 });
 
 // when url is deleted this removes it from urlDatabase and redirects user to /urls page
