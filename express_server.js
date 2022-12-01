@@ -61,7 +61,7 @@ app.get("/error2", (req, res) => {
 });
 
 // post to and user info to users obj and redirect to /urls
-app.post("/register/", (req, res) => {
+app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
@@ -72,7 +72,7 @@ app.post("/register/", (req, res) => {
   }
   // checks if email or password is taken and redirects to error page if true
   if (getUserByEmail(email)) {
-    res.redirect("/error2")
+    res.redirect("/error1")
     return;
   }
   users[id] = {
@@ -80,12 +80,13 @@ app.post("/register/", (req, res) => {
     email,
     password
   };
+  console.log(users)
   res.cookie("user_id", id);
-  res.redirect("/urls/");
+  res.redirect("/urls");
 })
 
 // page for registation
-app.get("/register/", (req,res) => {
+app.get("/register", (req,res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]],
   };
@@ -93,14 +94,14 @@ app.get("/register/", (req,res) => {
 })
 
 // page clears cookies and redirects back to /urls/
-app.post("/logout/", (req, res) => {
+app.post("/logout", (req, res) => {
   const val = req.body.users;
   res.clearCookie("user_id", val);
-  res.redirect("/urls/");
+  res.redirect("/login");
 });
 
 // login page
-app.get("/login/", (req, res) => {
+app.get("/login", (req, res) => {
   const templatevars = {
     urls: urlDatabase,
     user: users[req.cookies["user_id"]],
@@ -109,10 +110,22 @@ app.get("/login/", (req, res) => {
 })
 
 // this page saves the username to cookies then redirects back to /urls/
-app.post("/login/", (req, res) => {
-  const val = req.body.users;
-  res.cookie("user_id", val);
-  res.redirect("/login");
+app.post("/login", (req, res) => {
+  const password = req.body.password;
+  const email = req.body.email;
+
+  for (let id in users) {
+    if (!getUserByEmail(email)) {
+      res.redirect("/error2")
+    }
+    if (users[id].password === password) {
+      const val = users[id].id
+      res.cookie("user_id", val);
+      res.redirect("/urls");
+      return;
+    }
+  }
+  res.redirect("/error2")
 });
 
 // creates new short url when user submits form with long url then redirects to show page
@@ -160,7 +173,7 @@ app.post("/urls/:id/delete", (req, res) => {
 // Redirects back to /url/ which is now updated with new longURL
 app.post("/urls/:id", (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect("/urls/");
+  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
