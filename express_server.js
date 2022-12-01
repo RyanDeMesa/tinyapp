@@ -42,56 +42,16 @@ const users = {
 
 app.use(express.urlencoded({ extended: true }));
 
-// error page for empty email or password 
-app.get("/error1", (req, res) => {
-  const templatevars = {
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("error1", templatevars)
-});
-
-// error page for already registered email 
-app.get("/error2", (req, res) => {
-  const templatevars = {
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("error2", templatevars)
-});
-
-// error page to prompt user to login
-app.get("/error3", (req, res) => {
-  const templatevars = {
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("error3", templatevars)
-});
-
-// error page for missing url
-app.get("/error4", (req, res) => {
-  const templatevars = {
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("error4", templatevars)
-});
-
 // post to and user info to users obj and redirect to /urls
 app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  // checks if email or password is empty and redirects to error page if true
   if (!email || !password) {
-    res.redirect("/error1")
-    return;
+    return res.status(400).send('Files cannot be empty!');
   }
-  // checks if email or password is taken and redirects to error page if true
   if (getUserByEmail(email)) {
-    res.redirect("/error1")
-    return;
+    return res.status(400).send('Email is already linked to an account!');
   }
   users[id] = {
     id,
@@ -108,18 +68,11 @@ app.get("/register", (req,res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]],
   };
-  if (req.cookies["user_id"]) {
+  if (!req.cookies["user_id"]) {
     return res.redirect("/urls")
   }
   res.render("register", templateVars);
 })
-
-// page clears cookies and redirects back to /urls/
-app.post("/logout", (req, res) => {
-  const val = req.body.users;
-  res.clearCookie("user_id", val);
-  res.redirect("/login");
-});
 
 // login page
 app.get("/login", (req, res) => {
@@ -128,23 +81,30 @@ app.get("/login", (req, res) => {
     user: users[req.cookies["user_id"]],
   };
   res.render("login", templatevars)
+  if (!req.cookies["user_id"]) {
+    return res.redirect("/urls")
+  }
+  res.render("login", templateVars);
 })
 
 // this page saves the username to cookies then redirects back to /urls/
-app.post("/login", (req, res) => {
-  const password = req.body.password;
-  const email = req.body.email;
-  const user = getUserByEmail(email);
-  if (user) {
-    const userID = user.id;
-    res.cookie("user_id", userID);
-    return res.redirect("/urls");
-  } else {
-    res.redirect("error2");
+app.post("/urls_login", (req, res) => {
+  console.log("Log In button has been clicked");
+  if (!findUserEmail(req.body.email)) {
+    return res.status(403).send('Email is not registered!');
   }
-  if (password !== user.password) {
-    res.redirect("error2");
+  if (findUserEmail(req.body.email).password !== req.body.password) {
+    return res.status(403).send('Password does not match!');
   }
+  res.cookie('user_id', findUserEmail(req.body.email).id);
+  res.redirect("urls");
+});
+
+// page clears cookies and redirects back to /urls/
+app.post("/logout", (req, res) => {
+  const val = req.body.users;
+  res.clearCookie("user_id", val);
+  res.redirect("/login");
 });
 
 // creates new short url when user submits form with long url then redirects to show page
