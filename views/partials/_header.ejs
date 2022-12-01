@@ -18,16 +18,11 @@
        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
 
       <% if (!user) { %>
-      <div style = "position:absolute; right:10px">
-        <form method="POST" action ="/login">
-          <input
-          type="text" 
-          style="height: 37px;"
-          name="users"
-          placeholder="Users"
-          >
-          <button type="submit" class="btn btn-outline-dark">Submit</button>
-        </form>
+      <div style = "position:absolute; right:20px">
+   <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+     <div class="navbar-nav">
+       <a class="nav-item nav-link" href="/Login">Login</a>
+       <a class="nav-item nav-link" href="/Register">Register</a>
       </div>
       <% } else { %>
         <form method="POST" action="/logout">
