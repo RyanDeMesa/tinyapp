@@ -60,6 +60,24 @@ app.get("/error2", (req, res) => {
   res.render("error2", templatevars)
 });
 
+// error page to prompt user to login
+app.get("/error3", (req, res) => {
+  const templatevars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("error3", templatevars)
+});
+
+// error page for missing url
+app.get("/error4", (req, res) => {
+  const templatevars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("error4", templatevars)
+});
+
 // post to and user info to users obj and redirect to /urls
 app.post("/register", (req, res) => {
   const id = generateRandomString();
@@ -90,6 +108,9 @@ app.get("/register", (req,res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]],
   };
+  if (req.cookies["user_id"]) {
+    return res.redirect("/urls")
+  }
   res.render("register", templateVars);
 })
 
@@ -113,27 +134,29 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const password = req.body.password;
   const email = req.body.email;
-
-  for (let id in users) {
-    if (!getUserByEmail(email)) {
-      res.redirect("/error2")
-    }
-    if (users[id].password === password) {
-      const val = users[id].id
-      res.cookie("user_id", val);
-      res.redirect("/urls");
-      return;
-    }
+  const user = getUserByEmail(email);
+  if (user) {
+    const userID = user.id;
+    res.cookie("user_id", userID);
+    return res.redirect("/urls");
+  } else {
+    res.redirect("error2");
   }
-  res.redirect("/error2")
+  if (password !== user.password) {
+    res.redirect("error2");
+  }
 });
 
 // creates new short url when user submits form with long url then redirects to show page
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  const shortenedURL = generateRandomString(); // generates random 6 digit code for url inputted
-  urlDatabase[shortenedURL] = req.body.longURL; // addeds shortended url to urlDatabase as key and full url as value
-  res.redirect(`/urls/${shortenedURL}`); // response is to redirect to /urls/:id
+  const user = req.cookies["user_id"];
+  if (!user) {
+    return res.send("You can only create shortened urls while logged in!");
+  }
+  console.log(req.body);
+  const shortenedURL = generateRandomString(); 
+  urlDatabase[shortenedURL] = req.body.longURL; 
+  res.redirect(`/urls/${shortenedURL}`); 
 });
 
 // page that shows all urls
@@ -147,10 +170,27 @@ app.get("/urls", (req, res) => {
 
 // Page that lets you add new urls
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("urls_new", templateVars);
+  const email = req.body.email;
+  const password = req.body.password;
+  if (!email && !password) {
+    res.redirect("/login");
+  }
+  else {
+    const templateVars = { user: undefined };
+    res.render("urls_new", templateVars);
+  }
+});
+
+// opens long url from short url 
+app.get("/u/:id", (req, res) => {
+  let id = req.params.id;
+  const longURL = urlDatabase[id];
+  for (let shortURLs in urlDatabase) {
+    if(id === shortURLs) {
+      return res.redirect(longURL);
+    }
+}
+return res.send("that url is not in our system!");
 });
 
 // Shows page for short url
@@ -160,7 +200,7 @@ app.get("/urls/:id", (req, res) => {
     longURL: urlDatabase[req.params.id],
     user: users[req.cookies["user_id"]],
   };
-  res.render("urls_show", templateVars);
+  res.redirect(`/urls/${shortenedURL}`); 
 });
 
 // when url is deleted this removes it from urlDatabase and redirects user to /urls page
