@@ -23,9 +23,15 @@ const getUserByEmail = function (email) {
 
 // objects to hold information
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
-};
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+};;
 
 const users = {
   userRandomID: {
@@ -88,15 +94,14 @@ app.get("/login", (req, res) => {
 })
 
 // this page saves the username to cookies then redirects back to /urls/
-app.post("/urls_login", (req, res) => {
-  console.log("Log In button has been clicked");
-  if (!findUserEmail(req.body.email)) {
+app.post("/login", (req, res) => {
+  if (!getUserByEmail(req.body.email)) {
     return res.status(403).send('Email is not registered!');
   }
-  if (findUserEmail(req.body.email).password !== req.body.password) {
+  if (getUserByEmail(req.body.email).password !== req.body.password) {
     return res.status(403).send('Password does not match!');
   }
-  res.cookie('user_id', findUserEmail(req.body.email).id);
+  res.cookie('user_id', getUserByEmail(req.body.email).id);
   res.redirect("urls");
 });
 
@@ -150,7 +155,7 @@ app.get("/u/:id", (req, res) => {
       return res.redirect(longURL);
     }
 }
-return res.send("that url is not in our system!");
+return res.send("That url is not in our system!");
 });
 
 // Shows page for short url
