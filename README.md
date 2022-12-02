@@ -4,8 +4,9 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["screenshot description"](#)
-!["screenshot description"](#)
+!["screenshot of egister page"](#)
+!["screenshot of urls page"](#)
+!["screenshot of new url page"](#)
 
 ## Dependencies
 
