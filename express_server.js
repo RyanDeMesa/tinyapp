@@ -26,7 +26,7 @@ const urlsForUser = (id, urlDatabase) => {
   let userData = {};
   for (let shortURLS in urlDatabase) {
     if (id === urlDatabase[shortURLS].userID) {
-      result[shortURLS] = urlDatabase[shortURLS].longURL;
+      userData[shortURLS] = urlDatabase[shortURLS].longURL;
     }
   }
   return userData;
@@ -46,7 +46,7 @@ const urlDatabase = {
 
 const users = {
   userRandomID: {
-    id: "userRandomID",
+    id: "aJ48lW",
     email: "user@example.com",
     password: "password123",
   },
@@ -127,19 +127,22 @@ app.post("/urls", (req, res) => {
     return res.send("You can only create shortened urls while logged in!");
   }
   const shortenedURL = generateRandomString(); 
-  urlDatabase[shortenedURL] = {longURL: req.body.longURL, userID: req.cookie.user}
+  urlDatabase[shortenedURL] = {longURL: req.body.longURL, userID: req.cookies["user_id"]}
   return res.redirect(`/urls/${shortenedURL}`); 
 });
 
 // page that shows all urls
 app.get("/urls", (req, res) => {
+  if (!req.cookies.user_id) {
+    res.send("Please login to view you tinyURL's!")
+  }
+  const filtered = urlsForUser(req.cookies.user_id, urlDatabase)
   const templateVars = {
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
+    urls: filtered,
+    user: users[req.cookies.user_id],
   };
   res.render("urls_index", templateVars);
 });
-
 // Page that lets you add new urls
 app.get("/urls/new", (req, res) => {
   const templateVars = {
@@ -177,19 +180,40 @@ app.get("/urls/:id", (req, res) => {
   if (user !== urlDatabase[req.params.id].userID) {
     res.send("You don't have the correct permissions to view this url!")
   }
-  res.render("urls_show", templatevars);
+  res.render("urls_show", templateVars);
 });
 
 // when url is deleted this removes it from urlDatabase and redirects user to /urls page
 app.post("/urls/:id/delete", (req, res) => {
-  const id = req.params.id;
-  delete urlDatabase[id];
+  const userID = req.cookies.user_id;
+  const requestID = req.params.id;
+  if (Object.keys(urlDatabase).indexOf(requestID) < 0) {
+    res.send("That tinyURL is not in out database!");
+  }
+  if (!userID) {
+    res.send("Please login to delete tinyURL's");
+  }
+  if (userID !== urlDatabase[requestID].userID) {
+    res.send("You don't have access to that tinyURL!");
+  }
+  delete urlDatabase[requestID];
   res.redirect("/urls");
 });
 
 // Redirects back to /url/ which is now updated with new longURL
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
+  const userID = req.cookies.user_id;
+  const requestID = req.params.id;
+  if (Object.keys(urlDatabase).indexOf(requestID) < 0) {
+    res.send("That TinyURL is not in our database!");
+  }
+  if (!userID) {
+    res.send("Please login to edit this TinyURL");
+  }
+  if (userID !== urlDatabase[requestID].userID) {
+    res.send("You don't have access to this TinyURL");
+  }
+  urlDatabase[requestID].longURL = req.body.longURL;
   res.redirect("/urls");
 });
 
