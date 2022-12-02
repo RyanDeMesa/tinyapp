@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
+const { generateRandomString, getUserByEmail, urlsForUser } = require("./helpers");
 const app = express();
 const PORT = 8080; 
 
@@ -11,32 +12,6 @@ app.use(cookieSession({
   keys: ['key1', 'key2']
 }));
 
-
-// random string generator
-const generateRandomString = function () {
-  const random = Math.random().toString(36).slice(2);
-  return random.slice(0, 6);
-};
-
-// function to find user from email
-const getUserByEmail = function (email) {
-  for (let id in users) {
-    if (users[id].email === email) {
-      return users[id]
-    }
-  }
-};
-
-// function to return object with data for logged user
-const urlsForUser = (id, urlDatabase) => {
-  let userData = {};
-  for (let shortURLS in urlDatabase) {
-    if (id === urlDatabase[shortURLS].userID) {
-      userData[shortURLS] = urlDatabase[shortURLS].longURL;
-    }
-  }
-  return userData;
-};
 
 // objects to hold information
 const urlDatabase = {
