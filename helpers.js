@@ -5,13 +5,15 @@ const generateRandomString = function () {
 };
 
 // function to find user from email
-const getUserByEmail = (email, userDatabase) => {
-  for (let userID in userDatabase) {
-    if (userDatabase[userID].email === email) {
-      const user = userDatabase[userID];
-      return user;
+const getUserByEmail = (email, database) => {
+  for (const user of Object.values(database)) {
+    for (const [key, value] of Object.entries(user)) {
+      if (key === "email" && value === email) {
+        return user.id;
+      }
     }
   }
+  return null;
 };
 
 // function to return object with data for logged user

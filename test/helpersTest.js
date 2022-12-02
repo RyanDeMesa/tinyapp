@@ -15,18 +15,16 @@ const testUsers = {
   },
 };
 
-describe("getUserByEmail", () => {
-  it("should return a user with valid email", () => {
-    const user = getUserByEmail("user@example.com", testUsers);
+describe('getUserByEmail', function() {
+  it('should return a user with valid email', function() {
+    const user = getUserByEmail("user@example.com", testUsers)
     const expectedUserID = "userRandomID";
-
     assert.equal(user, expectedUserID);
   });
 
-  it("should return a user with valid email", () => {
-    const user = getUserByEmail("notAnEmail", testUsers);
+  it('should return undefined with a non-existent email', function() {
+    const user = getUserByEmail("example@example.com", testUsers);
     const expectedUserID = undefined;
-
     assert.equal(user, expectedUserID);
   });
 });
