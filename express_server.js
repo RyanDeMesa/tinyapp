@@ -1,11 +1,16 @@
 const express = require("express");
-const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; 
 
 app.set("view engine", "ejs");
-app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
+
 
 // random string generator
 const generateRandomString = function () {
@@ -58,8 +63,6 @@ const users = {
   },
 };
 
-app.use(express.urlencoded({ extended: true }));
-
 // post to and user info to users obj and redirect to /urls
 app.post("/register", (req, res) => {
   const id = generateRandomString();
@@ -76,28 +79,28 @@ app.post("/register", (req, res) => {
     email,
     password: bcrypt.hashSync(password, 10)
   };
-  res.cookie("user_id", id);
+  req.session.user_id = id;
   res.redirect("/urls");
 })
 
 // page for registation
 app.get("/register", (req,res) => {
-  if (req.cookies.id) {
+  if (req.session.id) {
     return res.redirect("/urls");
   } 
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
     };
   return res.render("register", templateVars);
 });
 
 // login page
 app.get("/login", (req, res) => {
-  if (req.cookies.id) {
+  if (req.session.id) {
     return res.redirect("/urls");
   } 
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user: users[req.session.user_id]
     };
   return res.render("login", templateVars);
 });
@@ -111,46 +114,45 @@ app.post("/login", (req, res) => {
   if (!bcrypt.compareSync(req.body.password, user.password)) {
     return res.status(403).send('Password does not match our records!');
   }
-  res.cookie('user_id', getUserByEmail(req.body.email).id);
+  res.session.user_id = "user_id";
   res.redirect("urls");
 });
 
 // page clears cookies and redirects back to /urls/
 app.post("/logout", (req, res) => {
-  const val = req.body.users;
-  res.clearCookie("user_id", val);
+  req.session = null;
   res.redirect("/login");
 });
 
 // creates new short url when user submits form with long url then redirects to show page
 app.post("/urls", (req, res) => {
-  const user = req.cookies["user_id"];
+  const user = req.session.user_id;
   if (!user) {
     return res.send("You can only create shortened urls while logged in!");
   }
   const shortenedURL = generateRandomString(); 
-  urlDatabase[shortenedURL] = {longURL: req.body.longURL, userID: req.cookies["user_id"]}
+  urlDatabase[shortenedURL] = {longURL: req.body.longURL, userID: req.session.user_id}
   return res.redirect(`/urls/${shortenedURL}`); 
 });
 
 // page that shows all urls
 app.get("/urls", (req, res) => {
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     res.send("Please login to view you tinyURL's!")
   }
-  const filtered = urlsForUser(req.cookies.user_id, urlDatabase)
+  const filtered = urlsForUser(req.session.user_id, urlDatabase)
   const templateVars = {
     urls: filtered,
-    user: users[req.cookies.user_id],
+    user: users[req.session.user_id],
   };
   res.render("urls_index", templateVars);
 });
 // Page that lets you add new urls
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    user: users[req.cookies["user_id"]],
+    user: users[req.session.user_id],
   };
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.redirect("/login")
   }
   res.render("urls_new", templateVars);
@@ -170,11 +172,11 @@ return res.send("That url is not in our system!");
 
 // Shows page for short url
 app.get("/urls/:id", (req, res) => {
-  const user = req.cookies.user_id
+  const user = req.session.user_id
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
-    user: users[req.cookies["user_id"]],
+    user: users[req.session.user_id],
   };
   if (!user) {
     res.send("Login to view this page!")
@@ -187,7 +189,7 @@ app.get("/urls/:id", (req, res) => {
 
 // when url is deleted this removes it from urlDatabase and redirects user to /urls page
 app.post("/urls/:id/delete", (req, res) => {
-  const userID = req.cookies.user_id;
+  const userID = req.session.user_id;
   const requestID = req.params.id;
   if (Object.keys(urlDatabase).indexOf(requestID) < 0) {
     res.send("That tinyURL is not in out database!");
@@ -204,7 +206,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 // Redirects back to /url/ which is now updated with new longURL
 app.post("/urls/:id", (req, res) => {
-  const userID = req.cookies.user_id;
+  const userID = req.session.user_id;
   const requestID = req.params.id;
   if (Object.keys(urlDatabase).indexOf(requestID) < 0) {
     res.send("That TinyURL is not in our database!");
