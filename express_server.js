@@ -1,17 +1,22 @@
 const express = require("express");
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
-const { generateRandomString, getUserByEmail, urlsForUser } = require("./helpers");
+const {
+  generateRandomString,
+  getUserByEmail,
+  urlsForUser,
+} = require("./helpers");
 const app = express();
-const PORT = 8080; 
+const PORT = 8080;
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieSession({
-  name: 'session',
-  keys: ['key1', 'key2']
-}));
-
+app.use(
+  cookieSession({
+    name: "session",
+    keys: ["key1", "key2"],
+  })
+);
 
 // objects to hold information
 const urlDatabase = {
@@ -23,7 +28,7 @@ const urlDatabase = {
     longURL: "https://www.google.ca",
     userID: "aJ48lW",
   },
-};;
+};
 
 const users = {
   userRandomID: {
@@ -44,28 +49,28 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   if (!email || !password) {
-    return res.status(400).send('Files cannot be empty!');
+    return res.status(400).send("Files cannot be empty!");
   }
-  if (getUserByEmail(email)) {
-    return res.status(400).send('Email is already linked to an account!');
+  if (getUserByEmail(email, users)) {
+    return res.status(400).send("Email is already linked to an account!");
   }
   users[id] = {
     id,
     email,
-    password: bcrypt.hashSync(password, 10)
+    password: bcrypt.hashSync(password, 10),
   };
   req.session.user_id = id;
   res.redirect("/urls");
-})
+});
 
 // page for registation
-app.get("/register", (req,res) => {
+app.get("/register", (req, res) => {
   if (req.session.id) {
     return res.redirect("/urls");
-  } 
+  }
   const templateVars = {
-    user: users[req.session.user_id]
-    };
+    user: users[req.session.user_id],
+  };
   return res.render("register", templateVars);
 });
 
@@ -73,24 +78,23 @@ app.get("/register", (req,res) => {
 app.get("/login", (req, res) => {
   if (req.session.id) {
     return res.redirect("/urls");
-  } 
+  }
   const templateVars = {
-    user: users[req.session.user_id]
-    };
+    user: users[req.session.user_id],
+  };
   return res.render("login", templateVars);
 });
 
 // this page saves the username to cookies then redirects back to /urls/
 app.post("/login", (req, res) => {
-  const user = getUserByEmail(req.body.email);
-  if (!user) {
-    return res.status(403).send('Email is not registered!');
+  const userID = getUserByEmail(req.body.email, users);
+  if (userID) {
+    if (bcrypt.compareSync(req.body.password, users[userID].password)) {
+      req.session.user_id = "user_id";
+      res.redirect("/urls");
+    }
   }
-  if (!bcrypt.compareSync(req.body.password, user.password)) {
-    return res.status(403).send('Password does not match our records!');
-  }
-  res.session.user_id = "user_id";
-  res.redirect("urls");
+  res.status(403).send("Account credentials do not match our records.");
 });
 
 // page clears cookies and redirects back to /urls/
@@ -105,59 +109,63 @@ app.post("/urls", (req, res) => {
   if (!user) {
     return res.send("You can only create shortened urls while logged in!");
   }
-  const shortenedURL = generateRandomString(); 
-  urlDatabase[shortenedURL] = {longURL: req.body.longURL, userID: req.session.user_id}
-  return res.redirect(`/urls/${shortenedURL}`); 
+  const shortenedURL = generateRandomString();
+  urlDatabase[shortenedURL] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_id,
+  };
+  return res.redirect(`/urls/${shortenedURL}`);
 });
 
 // page that shows all urls
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
-    res.send("Please login to view you tinyURL's!")
+    res.send("Please login to view you tinyURL's!");
   }
-  const filtered = urlsForUser(req.session.user_id, urlDatabase)
+  const filtered = urlsForUser(req.session.user_id, urlDatabase);
   const templateVars = {
     urls: filtered,
     user: users[req.session.user_id],
   };
   res.render("urls_index", templateVars);
 });
+
 // Page that lets you add new urls
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.session.user_id],
   };
   if (!req.session.user_id) {
-    return res.redirect("/login")
+    return res.redirect("/login");
   }
   res.render("urls_new", templateVars);
-})
+});
 
-// opens long url from short url 
+// opens long url from short url
 app.get("/u/:id", (req, res) => {
   let id = req.params.id;
   const longURL = urlDatabase[id].longURL;
   for (let shortURLs in urlDatabase) {
-    if(id === shortURLs) {
+    if (id === shortURLs) {
       return res.redirect(longURL);
     }
-}
-return res.send("That url is not in our system!");
+  }
+  return res.send("That url is not in our system!");
 });
 
 // Shows page for short url
 app.get("/urls/:id", (req, res) => {
-  const user = req.session.user_id
+  const user = req.session.user_id;
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
     user: users[req.session.user_id],
   };
   if (!user) {
-    res.send("Login to view this page!")
+    res.send("Login to view this page!");
   }
   if (user !== urlDatabase[req.params.id].userID) {
-    res.send("You don't have the correct permissions to view this url!")
+    res.send("You don't have the correct permissions to view this url!");
   }
   res.render("urls_show", templateVars);
 });
