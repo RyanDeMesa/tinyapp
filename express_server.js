@@ -65,7 +65,7 @@ app.post("/register", (req, res) => {
 
 // page for registation
 app.get("/register", (req, res) => {
-  if (req.session.id) {
+  if (req.session.user_id) {
     return res.redirect("/urls");
   }
   const templateVars = {
@@ -76,7 +76,7 @@ app.get("/register", (req, res) => {
 
 // login page
 app.get("/login", (req, res) => {
-  if (req.session.id) {
+  if (req.session.user_id) {
     return res.redirect("/urls");
   }
   const templateVars = {
@@ -90,8 +90,9 @@ app.post("/login", (req, res) => {
   const userID = getUserByEmail(req.body.email, users);
   if (userID) {
     if (bcrypt.compareSync(req.body.password, users[userID].password)) {
-      req.session.user_id = "user_id";
+      req.session.user_id = userID;
       res.redirect("/urls");
+      return
     }
   }
   res.status(403).send("Account credentials do not match our records.");
@@ -120,7 +121,7 @@ app.post("/urls", (req, res) => {
 // page that shows all urls
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
-    res.send("Please login to view you tinyURL's!");
+    return res.send("Please login to view you tinyURL's!");
   }
   const filtered = urlsForUser(req.session.user_id, urlDatabase);
   const templateVars = {
